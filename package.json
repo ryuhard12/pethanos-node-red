@@ -1,0 +1,14 @@
+{
+  "name": "node-red-celeryo",
+  "version": "0.0.1",
+  "description": "Node-RED project for Celeryo sprayer dashboard",
+  "scripts": {
+    "start": "node-red --userDir ./data",
+    "postinstall": "npm install node-red-dashboard@3.6.0 --no-audit --no-fund || true",
+    "heroku-postbuild": "npm rebuild --no-audit --no-fund || true"
+  },
+  "dependencies": {
+    "node-red": "3.1.0",
+    "node-red-dashboard": "3.6.0"
+  }
+}
