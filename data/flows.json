@@ -1,0 +1,287 @@
+[
+  {
+    "id": "flow-sprayer-main",
+    "type": "tab",
+    "label": "Pethanos Flow",
+    "disabled": false,
+    "info": ""
+  },
+
+  {
+    "id": "ui-group-control",
+    "type": "ui_group",
+    "z": "",
+    "name": "Control",
+    "tab": "ui-tab-sprayer",
+    "order": 1,
+    "disp": true,
+    "width": "6",
+    "collapse": false
+  },
+  {
+    "id": "ui-group-history",
+    "type": "ui_group",
+    "z": "",
+    "name": "History",
+    "tab": "ui-tab-sprayer",
+    "order": 2,
+    "disp": true,
+    "width": "6",
+    "collapse": false
+  },
+  {
+    "id": "ui-group-areas",
+    "type": "ui_group",
+    "z": "",
+    "name": "Area switches",
+    "tab": "ui-tab-sprayer",
+    "order": 3,
+    "disp": true,
+    "width": "6",
+    "collapse": false
+  },
+
+  {
+    "id": "ui-tab-sprayer",
+    "type": "ui_tab",
+    "name": "Sprayer",
+    "icon": "dashboard",
+    "disabled": false,
+    "hidden": false
+  },
+
+  {
+    "id": "manual-spray-form",
+    "type": "ui_form",
+    "z": "flow-sprayer-main",
+    "name": "Manual Spray",
+    "label": "Manual Spray (areas: 1,2,3...)",
+    "group": "ui-group-control",
+    "order": 1,
+    "width": "6",
+    "height": "1",
+    "options": [
+      {
+        "label": "areas",
+        "value": "areas",
+        "type": "text",
+        "required": false
+      },
+      {
+        "label": "duration (ms)",
+        "value": "dur_ms",
+        "type": "number",
+        "required": false
+      }
+    ],
+    "formValue": {},
+    "payload": "",
+    "submit": "submit",
+    "cancel": "cancel",
+    "topic": "",
+    "x": 180,
+    "y": 160,
+    "wires": [["func-build-manual-msg"]]
+  },
+
+  {
+    "id": "func-build-manual-msg",
+    "type": "function",
+    "z": "flow-sprayer-main",
+    "name": "build manual msg",
+    "func": "// Build manual spray command\nlet areas = msg.payload.areas || \"\";\nlet dur = Number(msg.payload.dur_ms || 5000);\nmsg.payload = {\n    cmd: \"manual\",\n    areas: areas,\n    dur_ms: dur\n};\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 440,
+    "y": 160,
+    "wires": [["mqtt-publish-control"]]
+  },
+
+  {
+    "id": "abort-btn",
+    "type": "ui_button",
+    "z": "flow-sprayer-main",
+    "name": "ABORT",
+    "group": "ui-group-control",
+    "order": 2,
+    "width": "3",
+    "height": "1",
+    "passthru": false,
+    "label": "ABORT",
+    "tooltip": "",
+    "color": "",
+    "bgcolor": "red",
+    "icon": "",
+    "payload": "{\"cmd\":\"abort\"}",
+    "payloadType": "json",
+    "topic": "",
+    "x": 180,
+    "y": 240,
+    "wires": [["mqtt-publish-abort"]]
+  },
+
+  {
+    "id": "mqtt-publish-control",
+    "type": "mqtt out",
+    "z": "flow-sprayer-main",
+    "name": "publish control",
+    "topic": "celeryo/spray/control",
+    "qos": "1",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "mqtt-broker-hivemq",
+    "x": 720,
+    "y": 160,
+    "wires": []
+  },
+
+  {
+    "id": "mqtt-publish-abort",
+    "type": "mqtt out",
+    "z": "flow-sprayer-main",
+    "name": "publish abort",
+    "topic": "celeryo/spray/abort",
+    "broker": "mqtt-broker-hivemq",
+    "x": 440,
+    "y": 240,
+    "wires": []
+  },
+
+  {
+    "id": "mqtt-status-in",
+    "type": "mqtt in",
+    "z": "flow-sprayer-main",
+    "name": "",
+    "topic": "celeryo/spray/status",
+    "qos": "1",
+    "datatype": "json",
+    "broker": "mqtt-broker-hivemq",
+    "x": 160,
+    "y": 320,
+    "wires": [["func-store-history", "ui-text-esp-status"]]
+  },
+
+  {
+    "id": "func-store-history",
+    "type": "function",
+    "z": "flow-sprayer-main",
+    "name": "store last 10 history",
+    "func": "let h = flow.get('history') || [];\nh.push(msg.payload);\nif(h.length > 10) h.shift();\nflow.set('history', h);\nmsg.payload = h;\nreturn msg;",
+    "x": 440,
+    "y": 320,
+    "wires": [["ui-table-history"]]
+  },
+
+  {
+    "id": "ui-table-history",
+    "type": "ui_table",
+    "z": "flow-sprayer-main",
+    "group": "ui-group-history",
+    "name": "History table",
+    "order": 1,
+    "width": "6",
+    "height": "4",
+    "columns": [],
+    "outputs": 0,
+    "cts": false,
+    "x": 720,
+    "y": 320,
+    "wires": []
+  },
+
+  {
+    "id": "ui-text-esp-status",
+    "type": "ui_text",
+    "z": "flow-sprayer-main",
+    "group": "ui-group-control",
+    "order": 3,
+    "width": "6",
+    "height": "1",
+    "name": "ESP status",
+    "label": "ESP status:",
+    "format": "{{msg.payload.status}}",
+    "layout": "row-spread",
+    "x": 440,
+    "y": 380,
+    "wires": []
+  },
+
+  {
+    "id": "ui-area-switch",
+    "type": "ui_switch",
+    "z": "flow-sprayer-main",
+    "name": "Area switches",
+    "label": "Enable areas",
+    "tooltip": "",
+    "group": "ui-group-areas",
+    "order": 1,
+    "width": 6,
+    "height": 1,
+    "passthru": false,
+    "decouple": "false",
+    "topic": "",
+    "style": "",
+    "onvalue": "on",
+    "onvalueType": "str",
+    "onicon": "",
+    "oncolor": "",
+    "offvalue": "off",
+    "offvalueType": "str",
+    "officon": "",
+    "offcolor": "",
+    "animate": true,
+    "x": 180,
+    "y": 460,
+    "wires": [["mqtt-publish-areas"]]
+  },
+
+  {
+    "id": "mqtt-publish-areas",
+    "type": "mqtt out",
+    "z": "flow-sprayer-main",
+    "name": "areas enable",
+    "topic": "celeryo/spray/areas",
+    "broker": "mqtt-broker-hivemq",
+    "x": 440,
+    "y": 460,
+    "wires": []
+  },
+
+  {
+    "id": "mqtt-broker-hivemq",
+    "type": "mqtt-broker",
+    "name": "HiveMQ Cloud (TLS)",
+    "broker": "83444876987b402b9053db627efeda74.s1.eu.hivemq.cloud",
+    "port": "8883",
+    "tls": "tls-hivemq",
+    "clientid": "",
+    "usetls": true,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "closeTopic": "",
+    "closePayload": "",
+    "willTopic": "",
+    "willPayload": ""
+  },
+
+  {
+    "id": "tls-hivemq",
+    "type": "tls-config",
+    "name": "TLS",
+    "cert": "",
+    "key": "",
+    "ca": "",
+    "verifyservercert": false
+  }
+]
